@@ -1,0 +1,31 @@
+package OOP;
+
+import java.util.List;
+
+public class KitchenView {
+    private ReportController reportController;
+
+    public KitchenView() {
+        this.reportController = new ReportController();
+    }
+
+    public void displayTodayMenu(List<Booking> bookings) {
+        System.out.println("Hệ thống [KitchenView]: Đang yêu cầu Controller kết xuất dữ liệu thực đơn...");
+        
+        // Gọi xuống tầng nghiệp vụ Controller xử lý quét và lọc
+        List<Menu> todayMenus = reportController.getTodayMenu(bookings);
+        
+        System.out.println("\n========= DANH SÁCH MÓN PHỤC VỤ HÔM NAY (CHẾ ĐỘ: CHỈ ĐỌC) =========");
+        if (todayMenus.isEmpty()) {
+            System.out.println("Không có thực đơn nào cần chuẩn bị. Không có tiệc CONFIRMED trong ngày hôm nay.");
+        } else {
+            // Hiển thị danh sách món ăn ra màn hình nhà bếp dưới dạng Read-only
+            for (int i = 0; i < todayMenus.size(); i++) {
+                Menu m = todayMenus.get(i);
+                System.out.printf("%d. Tên món: %-25s | Mã thực đơn: %s\n", 
+                                  (i + 1), m.getDishName(), m.getMenuId());
+            }
+        }
+        System.out.println("======================================================================\n");
+    }
+}
