@@ -1,0 +1,23 @@
+package OOP;
+
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+
+public class Manager extends Staff {
+
+	private ManagementView managementView = new ManagementView();
+
+	public Manager(String staffId, String fullName, String phone) {
+		super(staffId, fullName, "Manager", phone);
+	}
+	
+	// Thay đổi phương thức cũ để gọi thông qua mô hình MVC trong sơ đồ
+	public void reportRevenue(List<Invoice> invoices) {
+		System.out.println("Quản lý [" + getFullName() + "] gửi yêu cầu xem thống kê doanh thu.");
+		managementView.displayRevenueReport(invoices);
+	}
+
+	
+}
