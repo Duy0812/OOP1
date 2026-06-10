@@ -1,10 +1,14 @@
 package OOP;
 
 public class Kitchen extends Staff {
-
+    private KitchenView kitchenView = new KitchenView();
 	public Kitchen(String staffId, String fullName, String role, String phone) {
 		super(staffId, fullName, role, phone);
 		// TODO Auto-generated constructor stub
 	}
-
+public void viewTodayServiceList(List<Booking> totalBookings) {
+		System.out.println("Nhân viên Bếp [" + getFullName() + "] đã đăng nhập và đang xem danh sách phục vụ.");
+		// Đẩy luồng xử lý và hiển thị sang cho lớp View đảm nhiệm
+		kitchenView.displayTodayMenu(totalBookings);
+	}
 }
