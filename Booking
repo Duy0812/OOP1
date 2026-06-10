@@ -1,163 +1,104 @@
-package OOP;
+package OOP.model;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class Booking {
-	private String bookingId;
-	private Date bookingDate;
-	private Date eventDate;
-	private String shift;
-	private String status;
-	private double basePrice;
-	private boolean isDepositPaid = false;
+    private String bookingId;
+    private Date bookingDate;
+    private Date eventDate;
+    private String shift;
+    private String status; // PENDING, CONFIRMED, CANCELLED
+    private double basePrice;
+    private boolean isDepositPaid = false;
 
-	public Booking(String bookingId, Date bookingDate, Date eventDate, String shift, String status, double basePrice) {
-		super();
-		this.bookingId = bookingId;
-		this.bookingDate = bookingDate;
-		this.eventDate = eventDate;
-		this.shift = shift;
-		this.status = status;
-		this.basePrice = basePrice;
+    private Customer customer;
+    private BanquetHall hall;
+    private List<Menu> menus = new ArrayList<>();
+    private List<Service> services = new ArrayList<>();
+
+    public Booking(String bookingId, Date bookingDate, Date eventDate, String shift, String status, double basePrice, Customer customer, BanquetHall hall) {
+        this.bookingId = bookingId;
+        this.bookingDate = bookingDate;
+        this.eventDate = eventDate;
+        this.shift = shift;
+        this.status = status;
+        this.basePrice = basePrice;
+        this.customer = customer;
+        this.hall = hall;
+    }
+
+    // Các hàm Get/Set
+    public String getBookingId() { return bookingId; }
+    public Date getEventDate() { return eventDate; }
+    public String getShift() { return shift; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public Customer getCustomer() { return customer; }
+    public BanquetHall getHall() { return hall; }
+    public List<Menu> getMenus() { return menus; }
+    public List<Service> getServices() { return services; }
+    public boolean isDepositPaid() { return isDepositPaid; }
+    public void setDepositPaid(boolean depositPaid) { isDepositPaid = depositPaid; }
+
+    public void addMenu(Menu menu) { this.menus.add(menu); }
+    public void addService(Service service) { this.services.add(service); }
+
+    // Logic nghiệp vụ tính toán nội bộ
+    public double calculateDeposit() {
+        return (basePrice + calculateMenuAndServiceTotal()) * 0.3; // Đặt cọc mặc định 30%
+    }
+
+    private double calculateMenuAndServiceTotal() {
+        double menuSum = menus.stream().mapToDouble(Menu::getPricePerTable).sum();
+        double serviceSum = services.stream().mapToDouble(Service::getUnitPrice).sum(); // Giả lập sl bằng 1
+        return menuSum + serviceSum;
+    }
+
+    public double calculateTotal() {
+        return basePrice + calculateMenuAndServiceTotal();
+    }
+
+    public void confirmBooking(IPayment paymentMethod) {
+        if ("CONFIRMED".equals(this.status)) {
+            System.out.println("⚠️ Đơn đặt chỗ này đã xác nhận trước đó.");
+            return;
+        }
+        double deposit = calculateDeposit();
+        if (paymentMethod.payDeposit(deposit)) {
+            this.status = "CONFIRMED";
+            this.isDepositPaid = true;
+            if (hall != null) hall.setStatus("Đã đặt cọc");
+            System.out.println("✅ Xác nhận đặt cọc thành công cho đơn: " + bookingId);
+        }
+    }
+
+    public void processCancel() {
+        double fee = calculateDeposit() * 0.5; // Phạt 50% tiền cọc nếu hủy ngang
+        double refund = calculateDeposit() - fee;
+        this.status = "CANCELLED";
+        if (hall != null) hall.setStatus("Trống");
+        System.out.printf("Hệ thống xử lý: Phí phạt hủy đơn: %,.0f VNĐ. Hoàn trả lại: %,.0f VNĐ\n", fee, refund);
+    }
+
+    public boolean hasMenu(String menuId) {
+        return menus.stream().anyMatch(m -> m.getMenuId().equalsIgnoreCase(menuId));
+    }
+
+    public boolean hasService(String serviceId) {
+        return services.stream().anyMatch(s -> s.getServiceId().equalsIgnoreCase(serviceId));
+    }
+
+	public Date getBookingDate() {
+		return bookingDate;
 	}
 
-	private Customer customer;
-	private BanquetHall hall;
-	private List<Menu> menus = new ArrayList<>();
-	private List<Service> services = new ArrayList<>();
-	private Invoice invoice; // 1 Booking sinh ra 1 Invoice
-
-	// --- Logic Xác nhận đặt chỗ ---
-	public void confirmBooking(IPayment paymentMethod) {
-		// 1. Kiểm tra nếu đã thanh toán rồi hoặc đã hủy
-		if ("CONFIRMED".equals(this.status)) {
-			System.out.println("Đơn hàng này đã được xác nhận trước đó.");
-			return;
-		}
-		if ("CANCELLED".equals(this.status)) {
-			System.out.println("Không thể xác nhận đơn hàng đã bị hủy.");
-			return;
-		}
-
-		// 2. Thực hiện thanh toán cọc qua Interface IPayment
-		double depositAmount = calculateDeposit();
-
-		// Giả sử hàm pay() của IPayment trả về true nếu giao dịch thành công
-		if (paymentMethod != null && paymentMethod.payDeposit(depositAmount)) {
-			this.isDepositPaid = true;
-			this.status = "CONFIRMED"; // Đổi trạng thái sang Đã xác nhận
-			System.out.println("Hệ thống: Thanh toán cọc thành công. Đơn hàng " + bookingId + " đã được XÁC NHẬN.");
-		} else {
-			System.out.println("Hệ thống: Thanh toán thất bại. Vui lòng thử lại.");
-		}
+	public double getBasePrice() {
+		return basePrice;
 	}
-
-	// --- Các hàm tính toán giữ nguyên ---
-	public double calculateTotal() {
-		double total = (hall != null) ? hall.calculateRentPrice() : basePrice;
-		for (Menu m : menus)
-			if (m != null)
-				total += m.getPricePerTable();
-		for (Service s : services)
-			if (s != null)
-				total += s.calculateServiceFee(0);
-		return total;
+	public double DepositAmount() {
+		return this.calculateDeposit();
 	}
-
-	public double calculateDeposit() {
-		return calculateTotal() * 0.3;
-	}
-
-	// --- Cập nhật lại logic Hủy đơn dựa trên isDepositPaid ---
-	public double calculateCancellationFee() {
-		// Nếu chưa thanh toán cọc thì không phạt (Ngoại lệ 1 trong Use Case)
-		if (!isDepositPaid || "PENDING".equals(this.status)) {
-			return 0.0;
-		}
-
-		Date today = new Date();
-		long diffInMillies = Math.abs(eventDate.getTime() - today.getTime());
-		long diffInDays = TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
-
-		if (diffInDays < 7) {
-			return calculateDeposit(); // Phạt 100%
-		} else if (diffInDays < 30) {
-			return calculateDeposit() * 0.5; // Phạt 50%
-		}
-		return 0.0;
-	}
-
-	public void processCancel() {
-		if ("CANCELLED".equals(this.status))
-			return;
-
-		double fee = calculateCancellationFee();
-		double refund = isDepositPaid ? (calculateDeposit() - fee) : 0;
-
-		this.status = "CANCELLED";
-		if (hall != null)
-			hall.updateStatus("Available");
-
-		System.out.println("Đã hủy đơn. Tiền phạt: " + fee + ". Hoàn trả: " + refund);
-	}
-
-	public Date getEventDate() {
-		return eventDate;
-	}
-
-	public String getShift() {
-		return shift;
-	}
-
-	public String getBookingId() {
-		return bookingId;
-	}
-
-	public Customer getCustomer() {
-		// TODO Auto-generated method stub
-		return this.customer;
-	}
-
-	public String getStatus() {
-		// TODO Auto-generated method stub
-		return this.status = status;
-	}
-
-	public double getDepositAmount() {
-		// TODO Auto-generated method stub
-		return calculateDeposit();
-	}
-
-	public void setStatus(String string) {
-		// TODO Auto-generated method stub	
-	}
-
-	public boolean isDepositPaid() {
-		return isDepositPaid;
-	}
-
-	public void setDepositPaid(boolean isDepositPaid) {
-		this.isDepositPaid = isDepositPaid;
-	}
-
-	public Object getMenuId() {
-		// TODO Auto-generated method stub
-		return this.getMenuId();
-	}
-
-	public Object hasMenu(String targetMenuId) {
-		// TODO Auto-generated method stub
-		if (this.menus == null || this.menus.isEmpty()) return false;
-		return menus.stream().anyMatch(m -> m.getMenuId().equals(targetMenuId));
-	}
-
-	public Object hasService(String targetServiceId) {
-		// TODO Auto-generated method stub
-		if (this.services == null || this.services.isEmpty()) return false;
-		return services.stream().anyMatch(s -> s.getServiceId().equals(targetServiceId));
-	}
-
+    
 }
