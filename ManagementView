@@ -1,1 +1,30 @@
 
+package ...;
+
+import java.util.List;
+
+public class ManagementView {
+    private ReportController reportController;
+
+    public ManagementView() {
+        this.reportController = new ReportController();
+    }
+
+    // Manager yêu cầu xem thống kê tại đây
+    public void displayRevenueReport(List<Invoice> invoices) {
+        System.out.println("Hệ thống: Đang tải dữ liệu báo cáo từ Controller...");
+        
+        // Gọi xuống Controller lấy dữ liệu tổng doanh thu đã lọc
+        double totalRevenue = reportController.getRevenueReport(invoices);
+        
+        // Hiển thị dạng bảng / biểu đồ giả lập ra màn hình
+        System.out.println("\n=============================================");
+        System.out.println("         BẢNG THỐNG KÊ DOANH THU THỰC TẾ     ");
+        System.out.println("=============================================");
+        System.out.println(" Trạng thái lọc    : Chỉ tính Hóa đơn đã thanh toán (isPaid == 1)");
+        System.out.println(" Tổng số hóa đơn   : " + invoices.size());
+        System.out.println("---------------------------------------------");
+        System.out.printf(" TỔNG DOANH THU    : %,.2f VND\n", totalRevenue);
+        System.out.println("=============================================\n");
+    }
+}
