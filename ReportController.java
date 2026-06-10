@@ -5,16 +5,15 @@ import java.util.List;
 
 public class ReportController {
     
-    public void generateRevenueReport(List<Invoice> invoiceList) {
-        System.out.println("\n--- BÁO CÁO DOANH THU (MANAGER VIEW) ---");
+   // Thực thi chính xác logic: stream().filter(isPaid == 1).mapToDouble(...).sum()
+    public double getRevenueReport(List<Invoice> invoices) {
+        if (invoices == null) return 0.0;
         
-        // Sử dụng Java 8 Stream API để lọc hóa đơn đã thanh toán và tính tổng
-        double totalRevenue = invoiceList.stream()
-            .filter(Invoice::isPaid)
-            .mapToDouble(Invoice::getTotalAmount)
-            .sum();
-
-        long paidCount = invoiceList.stream().filter(Invoice::isPaid).count();
+        return invoices.stream()
+                .filter(invoice -> invoice.getIsPaid() == 1) // Chỉ tính hóa đơn đã thanh toán thành công
+                .mapToDouble(Invoice::getTotalAmount)
+                .sum();
+    }
 
         System.out.println("Số lượng hóa đơn đã thanh toán: " + paidCount);
         System.out.println("Tổng doanh thu thực tế: " + String.format("%,.0f", totalRevenue) + " VND");
