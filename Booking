@@ -1,104 +1,99 @@
-package OOP.model;
+package model.entity;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 public class Booking {
-    private String bookingId;
-    private Date bookingDate;
-    private Date eventDate;
-    private String shift;
-    private String status; // PENDING, CONFIRMED, CANCELLED
-    private double basePrice;
-    private boolean isDepositPaid = false;
+	private String bookingId;
+	private Customer customer;
+	private String hallId;
+	private LocalDate eventDate;
+	private String shift;
+	private String status;
+	private LocalDateTime createdAt;
+	private List<String> dishList;
+	private double totalAmount;
+	private double depositAmount;
 
-    private Customer customer;
-    private BanquetHall hall;
-    private List<Menu> menus = new ArrayList<>();
-    private List<Service> services = new ArrayList<>();
-
-    public Booking(String bookingId, Date bookingDate, Date eventDate, String shift, String status, double basePrice, Customer customer, BanquetHall hall) {
-        this.bookingId = bookingId;
-        this.bookingDate = bookingDate;
-        this.eventDate = eventDate;
-        this.shift = shift;
-        this.status = status;
-        this.basePrice = basePrice;
-        this.customer = customer;
-        this.hall = hall;
-    }
-
-    // Các hàm Get/Set
-    public String getBookingId() { return bookingId; }
-    public Date getEventDate() { return eventDate; }
-    public String getShift() { return shift; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
-    public Customer getCustomer() { return customer; }
-    public BanquetHall getHall() { return hall; }
-    public List<Menu> getMenus() { return menus; }
-    public List<Service> getServices() { return services; }
-    public boolean isDepositPaid() { return isDepositPaid; }
-    public void setDepositPaid(boolean depositPaid) { isDepositPaid = depositPaid; }
-
-    public void addMenu(Menu menu) { this.menus.add(menu); }
-    public void addService(Service service) { this.services.add(service); }
-
-    // Logic nghiệp vụ tính toán nội bộ
-    public double calculateDeposit() {
-        return (basePrice + calculateMenuAndServiceTotal()) * 0.3; // Đặt cọc mặc định 30%
-    }
-
-    private double calculateMenuAndServiceTotal() {
-        double menuSum = menus.stream().mapToDouble(Menu::getPricePerTable).sum();
-        double serviceSum = services.stream().mapToDouble(Service::getUnitPrice).sum(); // Giả lập sl bằng 1
-        return menuSum + serviceSum;
-    }
-
-    public double calculateTotal() {
-        return basePrice + calculateMenuAndServiceTotal();
-    }
-
-    public void confirmBooking(IPayment paymentMethod) {
-        if ("CONFIRMED".equals(this.status)) {
-            System.out.println("⚠️ Đơn đặt chỗ này đã xác nhận trước đó.");
-            return;
-        }
-        double deposit = calculateDeposit();
-        if (paymentMethod.payDeposit(deposit)) {
-            this.status = "CONFIRMED";
-            this.isDepositPaid = true;
-            if (hall != null) hall.setStatus("Đã đặt cọc");
-            System.out.println("✅ Xác nhận đặt cọc thành công cho đơn: " + bookingId);
-        }
-    }
-
-    public void processCancel() {
-        double fee = calculateDeposit() * 0.5; // Phạt 50% tiền cọc nếu hủy ngang
-        double refund = calculateDeposit() - fee;
-        this.status = "CANCELLED";
-        if (hall != null) hall.setStatus("Trống");
-        System.out.printf("Hệ thống xử lý: Phí phạt hủy đơn: %,.0f VNĐ. Hoàn trả lại: %,.0f VNĐ\n", fee, refund);
-    }
-
-    public boolean hasMenu(String menuId) {
-        return menus.stream().anyMatch(m -> m.getMenuId().equalsIgnoreCase(menuId));
-    }
-
-    public boolean hasService(String serviceId) {
-        return services.stream().anyMatch(s -> s.getServiceId().equalsIgnoreCase(serviceId));
-    }
-
-	public Date getBookingDate() {
-		return bookingDate;
+	public Booking(String bookingId, Customer customer, String hallId, LocalDate eventDate, String shift,
+			double totalAmount) {
+		this.bookingId = bookingId;
+		this.customer = customer;
+		this.hallId = hallId;
+		this.eventDate = eventDate;
+		this.shift = shift;
+		this.totalAmount = totalAmount;
+		this.status = "PENDING";
+		this.createdAt = LocalDateTime.now();
+		this.dishList = new ArrayList<>();
+		this.depositAmount = 0;
 	}
 
-	public double getBasePrice() {
-		return basePrice;
+	public void addDish(String dishName) {
+		dishList.add(dishName);
 	}
-	public double DepositAmount() {
-		return this.calculateDeposit();
+
+	public boolean containsDish(String dishName) {
+		return dishList.contains(dishName);
 	}
-    
+
+	// Xử lý trừ tiền phạt khi khách chủ động hủy
+	public void processCancel() {
+		System.out.println(">> [Nghiệp vụ] Phạt 50% tiền cọc do hủy hợp đồng.");
+		double refund = this.depositAmount * 0.5;
+		this.depositAmount = 0;
+		this.status = "CANCELLED";
+		System.out.println(">> [Nghiệp vụ] Đã hoàn trả: " + String.format("%,.0f", refund) + " VND cho khách hàng.");
+	}
+
+	// Getters & Setters
+	public String getBookingId() {
+		return bookingId;
+	}
+
+	public Customer getCustomer() {
+		return customer;
+	}
+
+	public String getHallId() {
+		return hallId;
+	}
+
+	public LocalDate getEventDate() {
+		return eventDate;
+	}
+
+	public String getShift() {
+		return shift;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public LocalDateTime getCreatedAt() {
+		return createdAt;
+	}
+
+	public List<String> getDishList() {
+		return dishList;
+	}
+
+	public double getTotalAmount() {
+		return totalAmount;
+	}
+
+	public double getDepositAmount() {
+		return depositAmount;
+	}
+
+	public void setDepositAmount(double depositAmount) {
+		this.depositAmount = depositAmount;
+	}
 }
